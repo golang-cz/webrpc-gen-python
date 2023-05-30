@@ -1,10 +1,13 @@
+import json
+import requests
+
 {{- define "client" -}}
 {{- $typeMap := .TypeMap -}}
 
 {{- if .Services}}
-//
-// Client
-//
+#
+# Client
+#
 
 {{- range .Services}}
 class {{.Name}}:
@@ -16,12 +19,12 @@ class {{.Name}}:
         return self.hostname + self.path + name
 
     {{- range .Methods}}
-    def {{.Name}}(self, {{template "methodInputs" dict "Method" . "TypeMap" $typeMap}}):
+    def {{firstLetterToLower .Name}}(self, {{template "methodInputs" dict "Method" . "TypeMap" $typeMap}}):
         url = self.url('{{.Name}}')
         headers = {'Content-Type': 'application/json'}
-        data = json.dumps({{.Name}}Args)
+        body = json.dumps({{.Name}}Args({{template "methodInputNames" .}}).__dict__)
 
-        response = requests.post(url, headers=headers, data=data)
+        response = requests.post(url, headers=headers, data=body)
         response.raise_for_status()
 
         response_data = response.json()

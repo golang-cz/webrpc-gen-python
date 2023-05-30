@@ -1,14 +1,53 @@
-{{- define "type" -}}
-{{- $type := .Type -}}
+{{- define "types" -}}
 {{- $typeMap := .TypeMap -}}
 
-{{- if isMapType .Type -}}
-    dict[{{template "type" dict "Type" (mapKeyType $type) "TypeMap" $typeMap}}: {{template "type" dict "Type" (mapValueType $type) "TypeMap" $typeMap}}]
-{{- else if isListType .Type -}}
-    List[{{template "type" dict "Type" (listElemType .Type) "TypeMap" $typeMap}}]
-{{- else if isStructType .Type -}}
-    {{.Type}}
-{{- else -}}
-    {{ get $typeMap .Type }}
-{{- end -}}
+#
+# Types
+#
+
+{{- if .Messages }}
+
+{{ range .Messages }}
+
+{{- if .Type | isEnumType }}
+
+class {{.Name}}(Enum):
+    {{- range .Fields }}
+    {{.Name}} = '{{.Name}}'
+    {{- end }}
+
+{{- end }}
+
+{{- if .Type | isStructType }}
+
+class {{.Name}}:
+    def __init__(self{{range .Fields}}, {{fieldName .}}{{end}}):
+        {{- range .Fields }}
+        self.{{fieldName .}} = {{fieldName .}}
+        {{- end }}
+
+{{- end }}
+
+{{- end }}
+
+{{- end }}
+
+{{- if .Services }}
+
+{{ range .Services }}
+
+class {{.Name}}:
+    def __init__(self, {{- range $_, $method := .Methods}}{{- $methodArgs := $method.Name}}args: {{.Name}}Args) -> None:
+        self.args = args
+
+    {{- range $_, $method := .Methods }}
+    {{- $methodArgs := $method.Name}}def {{firstLetterToLower $method.Name}}(self, {{- template "methodInputs" dict "Method" $method "TypeMap" $typeMap}}) -> {{.Name}}Return:
+        # Add your implementation here
+        pass
+    {{- end }}
+
+{{- end }}
+
+{{- end }}
+
 {{- end -}}

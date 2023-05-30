@@ -1,6 +1,4 @@
 {{- define "pyType" -}}
-
-{{- /* Used to validate types on server. */ -}}
 {{- $type := .Type -}}
 {{- $typeMap := .TypeMap -}}
 
@@ -12,10 +10,14 @@
 
 {{- else if isStructType .Type -}}
     # {{.Type}}
-    # TODO: Define Python structure here
-
+    class {{.Type}}:
+        def __init__(self, {{range $i, $field := .Fields}}{{if gt $i 0}}, {{end}}{{$field.Name}}{{end}}):
+            {{range .Fields}}
+            self.{{.Name}} = {{.Name}}
+            {{end}}
 {{- else -}}
     {{ get $typeMap .Type }}
 
 {{- end -}}
 {{- end -}}
+

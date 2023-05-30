@@ -1,35 +1,30 @@
-{{- define "client_helpers" -}}
+{{define "client_helpers"}}
+import json
+from typing import Any, Dict, Union
+
 class WebRPCError(Exception):
-    def __init__(self, code: str, msg: str, status: int):
+    def __init__(self, code: str, msg: str, status: int) -> None:
         self.code = code
         self.msg = msg
         self.status = status
-        super().__init__(msg)
 
-def create_http_request(body=None, headers=None):
-    if body is None:
-        body = {}
-    if headers is None:
-        headers = {}
-    headers["Content-Type"] = "application/json"
+def create_http_request(body: Dict[str, Any] = {}, headers: Dict[str, Any] = {}) -> Dict[str, Any]:
     return {
         "method": "POST",
-        "headers": headers,
+        "headers": {**headers, "Content-Type": "application/json"},
         "body": json.dumps(body)
     }
 
-def build_response(response):
-    text = response.text
+async def build_response(res: Union[Dict[str, Any], None]) -> Any:
+    text = await res.text()
     try:
         data = json.loads(text)
-    except json.JSONDecodeError as err:
-        raise WebRPCError("unknown", f"expecting JSON, got: {text}", response.status_code)
-    if not response.ok:
-        raise WebRPCError(data["code"], data["msg"], response.status_code)
+    except json.JSONDecodeError:
+        raise WebRPCError('unknown', f"expecting JSON, got: {text}", res.status) from None
+
+    if not res.ok:
+        raise data  # webrpc error response
+
     return data
 
-def fetch(url, init=None):
-    response = requests.post(url, **(init or {}))
-    response.raise_for_status()
-    return response
-{{- end -}}
+{{end}}

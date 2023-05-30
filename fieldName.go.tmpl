@@ -1,6 +1,12 @@
-{{- define "help" -}}
-  {{- range $k, $v := . -}}
-    {{- stderrPrintf "  -%v=%v\n" $k $v -}}
-  {{- end -}}
-  {{- stderrPrintf "See https://github.com/webrpc/webrpc-gen-python for more info.\n" -}}
+{{- define "fieldName" -}}
+{{- $field := .Field -}}
+{{- $fieldName := $field.Name -}}
+
+{{- range $meta := $field.Meta -}}
+    {{- if eq $meta.Name "json" -}}
+        {{- $fieldName = $meta.Value | split "," | first -}}
+    {{- end -}}
+{{- end -}}
+
+{{- $fieldName -}}
 {{- end -}}

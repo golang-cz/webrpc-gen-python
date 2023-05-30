@@ -9,7 +9,8 @@ PY_TYPES = [
     "str",
     "list",
     "tuple",
-    "dict"
+    "dict",
+    "NoneType"
 ]
 
 {{- range $messages }}
@@ -37,6 +38,9 @@ TYPE_VALIDATORS = {
 def validate_type(value, type):
     if type in PY_TYPES:
         return isinstance(value, type)
+
+    if type == "function":
+        return callable(value)
 
     validator = TYPE_VALIDATORS.get(type)
 

@@ -1,0 +1,23 @@
+{{- define "help" -}}
+{{- $opts := . -}}
+Usage:
+  {{- .WebrpcTarget}} [-help] [-client] [-server]
+
+Options:
+  -help
+        Print help information
+  -client
+        Generate client code
+  -server
+        Generate server code
+
+Examples:
+  # Generate client and server code
+  {{- .WebrpcTarget}}
+
+  # Generate client code only
+  {{- .WebrpcTarget}} -client
+
+  # Generate server code only
+  {{- .WebrpcTarget}} -server
+{{- end -}}
