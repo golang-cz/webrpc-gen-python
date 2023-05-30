@@ -1,0 +1,48 @@
+{{- define "server_helpers" -}}
+{{- $messages := .Messages -}}
+{{- $typeMap := .TypeMap -}}
+
+PY_TYPES = [
+    "bool",
+    "int",
+    "float",
+    "str",
+    "list",
+    "tuple",
+    "dict"
+]
+
+{{- range $messages }}
+def validate_{{ .Name }}(value):
+    {{- range .Fields }}
+    {{- $fieldName := (fieldName .) }}
+    {{- if .Optional }}
+    if "{{ $fieldName }}" in value and not validate_type(value["{{ $fieldName }}"], "{{ pyType .Type $typeMap }}"):
+        return False
+    {{- else }}
+    if "{{ $fieldName }}" not in value or not validate_type(value["{{ $fieldName }}"], "{{ pyType .Type $typeMap }}"):
+        return False
+    {{- end }}
+    {{- end }}
+
+    return True
+{{- end }}
+
+TYPE_VALIDATORS = {
+    {{- range $messages }}
+    "{{ .Name }}": validate_{{ .Name }},
+    {{- end }}
+}
+
+def validate_type(value, type):
+    if type in PY_TYPES:
+        return isinstance(value, type)
+
+    validator = TYPE_VALIDATORS.get(type)
+
+    if not validator:
+        return False
+
+    return validator(value)
+
+{{- end -}}

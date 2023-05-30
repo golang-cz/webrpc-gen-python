@@ -1,0 +1,70 @@
+{{- define "types" -}}
+
+{{- $typeMap := .TypeMap -}}
+
+#
+# Types
+#
+
+{{- if .Messages }}
+
+{{ range .Messages }}
+
+{{- if .Type | isEnumType }}
+
+{{$enumName := .Name}}
+class {{$enumName}}(Enum):
+{{- range $i, $field := .Fields}}
+    {{$field.Name}} = '{{$field.Name}}'
+{{- end}}
+
+{{- end }}
+
+{{- if .Type | isStructType }}
+
+class {{.Name}}:
+    def __init__(self, {{- range .Fields}}{{- $isExportable := true -}}
+        {{- range $meta := .Meta -}}
+            {{- if eq (get $meta "json") "-" -}}
+                {{- $isExportable = false -}}
+            {{- end -}}
+        {{- end -}}
+        {{- if $isExportable -}}
+            {{template "fieldName" dict "Field" .}}{{if .Optional}}: Optional[{{template "type" dict "Type" .Type "TypeMap" $typeMap}}]] = None, {{else}}: {{template "type" dict "Type" .Type "TypeMap" $typeMap}}, {{end -}}
+        {{- end -}}
+    {{- end -}}) -> None:
+        {{- range .Fields -}}
+            {{- if not .Optional}}
+                if {{template "fieldName" dict "Field" .}} is None:
+                    raise ValueError("Field '{{template "fieldName" dict "Field" .}}' is required")
+            {{- end -}}
+        {{- end -}}
+        {{- range .Fields -}}
+            self.{{template "fieldName" dict "Field" .}} = {{template "fieldName" dict "Field" .}}
+        {{- end }}
+
+{{- end }}
+
+{{- end }}
+
+{{- end }}
+
+{{- if .Services }}
+
+{{- range .Services }}
+
+class {{.Name}}:
+    def __init__(self, {{- range $_, $method := .Methods}}{{- $methodArgs := $method.Name}}args: {{.Name}}Args) -> None:
+        self.args = args
+
+    {{- range $_, $method := .Methods }}
+        {{- $methodArgs := $method.Name}}def {{firstLetterToLower $method.Name}}(self, {{- template "methodInputs" dict "Method" $method "TypeMap" $typeMap}}) -> {{.Name}}Return:
+            # Add your implementation here
+            pass
+    {{- end }}
+
+{{- end }}
+
+{{- end }}
+
+{{- end -}}
