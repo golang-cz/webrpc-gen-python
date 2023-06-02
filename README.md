@@ -1,36 +1,20 @@
-webrpc-gen Typescript templates
+webrpc-gen Python templates
 ===============================
 
-This repo contains the templates used by the `webrpc-gen` cli to code-generate
+This repo contains the Go templates used by the `webrpc-gen` cli to code-generate
 webrpc Python server and client code.
 
-This generator, from a webrpc schema/design file will code-generate:
-
-1. Client -- an isomorphic/universal Python client to speak to a webrpc server using the
-provided schema. This client is compatible with any webrpc server language (ie. Go, nodejs, etc.).
-As the client is isomorphic, means you can use this within a Web browser or use the client in a 
-server like nodejs -- both without needing any dependencies. I suggest to read the generated
-output of the generated code, and you shall see, its nothing fancy, just the sort of thing you'd
-write by hand.
-
-2. Server -- a Python server handler. See examples.
 
 ## Usage
 
 ```
-webrpc-gen -schema=example.ridl -target=python -server -client -out=./example.gen.py
-```
+webrpc-gen -schema=example.ridl -target=python -out=./example.gen.py -server -client
 
-or 
+# or 
+webrpc-gen -schema=example.ridl -target=github.com/webrpc/gen-python@v0.12.0 -out=./example.gen.py -server -client
 
-```
-webrpc-gen -schema=example.ridl -target=github.com/webrpc/webrpc-gen-python@v0.7.0 -server -client -out=./example.gen.py
-```
-
-or
-
-```
-webrpc-gen -schema=example.ridl -target=./local-templates-on-disk -server -client -out=./example.gen.py
+# or
+webrpc-gen -schema=example.ridl -target=./local-go-templates-on-disk -out=./example.gen.py -server -client
 ```
 
 As you can see, the `-target` supports default `python`, any git URI, or a local folder :)
@@ -38,11 +22,38 @@ As you can see, the `-target` supports default `python`, any git URI, or a local
 ### Set custom template variables
 Change any of the following values by passing `-option="Value"` CLI flag to `webrpc-gen`.
 
-| webrpc-gen -option   | Description                | Default value              |
-|----------------------|----------------------------|----------------------------|
-| `-client`            | generate client code       | unset (`false`)            |
-| `-server`            | generate server code       | unset (`false`)            |
-| `-server_framework`  | server code framework      | unset (`native python`)    |
+| webrpc-gen -option   | Description                             | Default value              | Added in |
+|----------------------|-----------------------------------------|----------------------------|----------|
+| `-client`            | generate client code                    | unset (`false`)            |          |
+| `-server`            | generate server code                    | unset (`false`)            |          |
+
+Example:
+```
+webrpc-gen -schema=./proto.json -target=python -out server.gen.py -server
+```
+
+## Set custom Go field meta tags in your RIDL file
+
+| CLI option flag           | Description                                                      |
+|---------------------------|------------------------------------------------------------------|
+| `+ python.field.name = ID`    | Set custom field name                                            |
+| `+ python.field.type = int64` | Set custom field type (must be able to JSON unmarshal the value) |
+
+Example:
+```ridl
+message User
+  - id: uint64
+    + python.field.name = ID
+```
+will result in
+```go
+TODO
+```
+
+## Examples
+
+See [_examples](./_examples)
+
 ## LICENSE
 
 [MIT LICENSE](./LICENSE)

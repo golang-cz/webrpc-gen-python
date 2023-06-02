@@ -1,34 +1,83 @@
-{{- if .Services }}
-{{- range .Services }}
-{{- range .Methods }}
-class {{.Name}}Args:
-    def __init__(self, {{- range .Inputs}}{{- $isExportable := true -}}
-        {{- range $meta := .Meta -}}
-            {{- if eq (get $meta "json") "-" -}}
-                {{- $isExportable = false -}}
-            {{- end -}}
-        {{- end -}}
-        {{- if $isExportable -}}
-            {{template "fieldName" dict "Field" .}}{{if .Optional}}: Optional[{{template "type" dict "Type" .Type "TypeMap" $typeMap}}]] = None, {{else}}: {{template "type" dict "Type" .Type "TypeMap" $typeMap}}, {{end -}}
-        {{- end -}}
-    {{- end -}}) -> None:
-        {{- range .Inputs -}}
-            self.{{template "fieldName" dict "Field" .}} = {{template "fieldName" dict "Field" .}}
-        {{- end }}
+{{define "types"}}
+{{- $messages := .Types -}}
+{{- $typeMap := .TypeMap -}}
 
-class {{.Name}}Return:
-    def __init__(self, {{- range .Outputs}}{{- $isExportable := true -}}
-        {{- range $meta := .Meta -}}
+#
+# Types
+#
+from enum import Enum
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+import typing
+
+{{- if .Types -}}
+{{range .Types -}}
+
+{{if .Type | isEnumType -}}
+{{$enumName := .Name}}
+class {{$enumName}}(Enum):
+{{- range $i, $field := .Fields}}
+    {{$field.Name}} = '{{$field.Name}}'
+{{- end}}
+{{end -}}
+
+{{- if .Type | isStructType  }}
+class {{.Name}}:
+    def __init__(self, {{- range .Fields}}
+        {{- $isExportable := true -}}
+        {{- range $meta := .Meta -}} 
             {{- if eq (get $meta "json") "-" -}}
-                {{- $isExportable = false -}}
+                {{- $isExportable = false}}
             {{- end -}}
-        {{- end -}}
-        {{- if $isExportable -}}
-            {{template "fieldName" dict "Field" .}}{{if .Optional}}: Optional[{{template "type" dict "Type" .Type "TypeMap" $typeMap}}]] = None, {{else}}: {{template "type" dict "Type" .Type "TypeMap" $typeMap}}, {{end -}}
-        {{- end -}}
-    {{- end -}}) -> None:
-        {{- range .Outputs -}}
-            self.{{template "fieldName" dict "Field" .}} = {{template "fieldName" dict "Field" .}}
         {{- end }}
-{{- end }}
-{{- end }}
+        {{if $isExportable -}}{{.Name}}{{if .Optional}} = None{{end}},{{- end -}}
+        {{- end}}
+    ):
+        {{- range .Fields}}
+        self.{{.Name}} = {{.Name}}
+        {{- end}}
+
+
+{{end -}}
+{{end -}}
+{{end -}}
+
+{{- if .Services}}
+{{- range .Services}}
+
+{{- range $_, $method := .Methods}}
+@dataclass
+class {{$method.Name}}Return(ABC):
+    pass
+
+@dataclass
+class {{$method.Name}}Args(ABC):
+    pass
+{{- end}}
+
+class {{.Name}}(ABC):
+{{- range $_, $method := .Methods}}
+    @abstractmethod
+    def {{ $method.Name }}(self, {{template "methodInputs" dict "Method" $method "TypeMap" $typeMap}}) -> {{$method.Name}}Return:
+        pass
+{{- end}}
+{{end}}
+
+{{- range $_, $method := .Methods}}
+@dataclass
+class {{$method.Name}}Args:
+{{- range .Inputs}}
+    {{.Name}}{{if .Optional}} = None{{end}}: {{template "type" dict "Type" .Type "TypeMap" $typeMap}}
+{{- end}}
+{{- end}}
+
+{{- range $_, $method := .Methods}}
+@dataclass
+class {{$method.Name}}Return:
+{{- range .Outputs}}
+    {{.Name}}{{if .Optional}} = None{{end}}: {{template "type" dict "Type" .Type "TypeMap" $typeMap}}
+{{- end}}
+{{- end}}
+{{end}}
+{{- end}}
+

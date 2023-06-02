@@ -1,23 +1,24 @@
 {{- define "pyType" -}}
+
+{{- /* Used to validate types on server. */ -}}
 {{- $type := .Type -}}
 {{- $typeMap := .TypeMap -}}
 
-{{- if isMapType .Type -}}
+{{- if (isMapType .Type) -}}
+
     dict
 
-{{- else if isListType .Type -}}
+{{- else if (isListType .Type) -}}
+
     List[{{template "type" dict "Type" (listElemType .Type) "TypeMap" $typeMap}}]
 
-{{- else if isStructType .Type -}}
-    # {{.Type}}
-    class {{.Type}}:
-        def __init__(self, {{range $i, $field := .Fields}}{{if gt $i 0}}, {{end}}{{$field.Name}}{{end}}):
-            {{range .Fields}}
-            self.{{.Name}} = {{.Name}}
-            {{end}}
+{{- else if (isStructType .Type) -}}
+
+    {{.Type}}
+
 {{- else -}}
+
     {{ get $typeMap .Type }}
 
 {{- end -}}
 {{- end -}}
-

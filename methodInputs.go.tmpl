@@ -4,5 +4,5 @@
 {{- $typeMap := .TypeMap -}}
 
 {{- if gt (len $method.Inputs) 0 -}}
-args: {{.Name}}Args, {{- end -}}headers: dict = {}
+{{- end -}}headers=dict()
 {{- end -}}

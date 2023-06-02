@@ -3,7 +3,7 @@
 {{- $fieldName := $field.Name -}}
 
 {{- range $meta := $field.Meta -}}
-    {{- if eq $meta.Name "json" -}}
+    {{- if and (eq $meta.Name "json") (ne $meta.Value "") -}}
         {{- $fieldName = $meta.Value | split "," | first -}}
     {{- end -}}
 {{- end -}}
