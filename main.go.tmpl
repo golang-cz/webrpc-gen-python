@@ -3,7 +3,6 @@
 {{- $opts := dict -}}
 {{- set $opts "client" (ternary (in .Opts.client "" "true") true false) -}}
 {{- set $opts "server" (ternary (not (eq (get .Opts "server") "")) true false) -}}
-{{- stderrPrintf "See %v \n" .Opts.server -}}
 {{- if exists .Opts "help" -}}
   {{- template "help" $opts -}}
   {{- exit 0 -}}
@@ -11,7 +10,7 @@
 
 {{- range $k, $v := .Opts }}
   {{- if not (exists $opts $k) -}}
-    {{- stderrPrintf "-%v=%q is not a supported target option\n\nUsage:\n" $k $v -}}
+    {{- stderrPrintf "-%s=%s is not a supported target option\n\nUsage:\n" $k $v -}}
     {{- template "help" $opts -}}
     {{- exit 1 -}}
   {{- end -}}
@@ -67,10 +66,9 @@ WebRPCSchemaHash = "{{.SchemaHash}}"
   {{template "client" dict "Services" .Services "TypeMap" $typeMap}}
   {{template "client_helpers" .}}
 {{- end }}
-
 {{- if $opts.server}}
   {{- $serverOption := get .Opts "server" -}}
-  {{- if eq $serverOption "flask" }}
+  {{- if or (eq $serverOption "flask")  (eq $serverOption "true") }}
     {{- template "flask" dict "Services" .Services "Opts" $opts "TypeMap" $typeMap }}
     {{- template "server_helpers"  dict "Messages" .Types "TypeMap" $typeMap}}
   {{- else if eq $serverOption "django" }}
@@ -83,6 +81,7 @@ WebRPCSchemaHash = "{{.SchemaHash}}"
     {{- stderrPrintf "Unsupported server option: %q\n\nUsage:\n" $opts.server -}}
     {{- template "help" $opts -}}
     {{- exit 1 -}}
+  
   {{- end }}
 {{- end }}
 
