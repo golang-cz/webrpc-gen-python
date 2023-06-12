@@ -1,0 +1,12 @@
+{{- define "fieldName" -}}
+{{- $field := .Field -}}
+{{- $fieldName := $field.Name -}}
+
+{{- range $meta := $field.Meta -}}
+    {{- if and (eq $meta.Name "json") (ne $meta.Value "") -}}
+        {{- $fieldName = $meta.Value | split "," | first -}}
+    {{- end -}}
+{{- end -}}
+
+{{- $fieldName -}}
+{{- end -}}

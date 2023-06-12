@@ -1,0 +1,26 @@
+{{- define "type" -}}
+
+{{- $type := .Type -}}
+{{- $typeMap := .TypeMap -}}
+
+{{- if isMapType .Type -}}
+
+    {{- $keyType := mapKeyType $type -}}
+    {{- $valueType := mapValueType $type -}}
+
+    Dict[{{ template "type" dict "Type" $keyType "TypeMap" $typeMap }}, {{ template "type" dict "Type" $valueType "TypeMap" $typeMap }}]
+
+{{- else if isListType .Type -}}
+
+    List[{{ template "type" dict "Type" (listElemType .Type) "TypeMap" $typeMap }}]
+
+{{- else if isStructType .Type -}}
+
+    {{ .Type }}
+
+{{- else -}}
+
+    {{ get $typeMap .Type }}
+
+{{- end -}}
+{{- end -}}

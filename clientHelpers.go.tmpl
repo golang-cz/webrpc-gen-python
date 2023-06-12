@@ -1,0 +1,30 @@
+{{define "client_helpers"}}
+import json
+from typing import Any, Dict, Union
+
+class WebRPCError(Exception):
+    def __init__(self, code: str, msg: str, status: int) -> None:
+        self.code = code
+        self.msg = msg
+        self.status = status
+
+def create_http_request(body: Dict[str, Any] = {}, headers: Dict[str, Any] = {}) -> Dict[str, Any]:
+    return {
+        "method": "POST",
+        "headers": {**headers, "Content-Type": "application/json"},
+        "body": json.dumps(body)
+    }
+
+async def build_response(res: Union[Dict[str, Any], None]) -> Any:
+    text = await res.text()
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        raise WebRPCError('unknown', f"expecting JSON, got: {text}", res.status) from None
+
+    if not res.ok:
+        raise data  # webrpc error response
+
+    return data
+
+{{end}}

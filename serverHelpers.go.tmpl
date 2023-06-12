@@ -1,0 +1,54 @@
+{{- define "server_helpers" -}}
+{{- $messages := .Types -}}
+{{- $typeMap := .TypeMap -}}
+
+{{- range $messages }}
+def validate_{{ .Name }}(value):
+    {{- range .Fields }}
+        {{- if .Optional }}
+            if "{{ template "fieldName" dict "Field" . }}" in value and not validate_type(value["{{ template "fieldName" dict "Field" . }}"], "{{ template "pyType" dict "Type" .Type "TypeMap" $typeMap }}"):
+                return False
+        {{- else }}
+             if "{{ template "fieldName" dict "Field" . }}" not in value or not validate_type(value["{{ template "fieldName" dict "Field" . }}"], "{{ template "pyType" dict "Type" .Type "TypeMap" $typeMap }}"):
+                return False
+        {{- end }}
+    {{- end }}
+
+    return True
+{{- end }}
+
+
+TYPE_VALIDATORS: typing.Dict[str, Callable[[any], bool]] = {}
+
+TYPE_VALIDATORS = {
+    {{ range $messages }}
+        {{ .Name }}: validate{{ .Name }},
+    {{ end }}
+}
+
+PY_TYPES = [
+    "bool",
+    "int",
+    "float",
+    "str",
+    "list",
+    "tuple",
+    "dict",
+    "NoneType"
+]
+
+def validate_type(value, type):
+    if type in PY_TYPES:
+        return isinstance(value, type)
+
+    if type == "function":
+        return callable(value)
+
+    validator = TYPE_VALIDATORS.get(type)
+
+    if not validator:
+        return False
+
+    return validator(value)
+
+{{- end -}}

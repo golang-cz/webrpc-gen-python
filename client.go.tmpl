@@ -1,0 +1,43 @@
+{{- define "client" -}}
+{{- $typeMap := .TypeMap -}}
+
+{{- if .Services}}
+#
+# Imports
+#
+import json
+import requests
+
+#
+# Client
+#
+
+{{- range .Services}}
+class {{.Name}}Client:
+    def __init__(self, hostname):
+        self.hostname = hostname
+        self.path = '/rpc/{{.Name}}/'
+
+    def url(self, name):
+        return f"{self.hostname}{self.path}{name}"
+
+    {{- range .Methods}}
+    def {{firstLetterToLower .Name}}(self, {{template "methodInputs" dict "Method" . "TypeMap" $typeMap}}):
+        url = self.url('{{.Name}}')
+        headers = {'Content-Type': 'application/json'}
+        body = json.dumps({{.Name}}Args({{template "methodInputs" dict "Method" . "TypeMap" $typeMap}}).__dict__)
+
+        try:
+            response = requests.post(url, headers=headers, data=body)
+            response.raise_for_status()
+
+            response_data = response.json()
+            return {{.Name}}Return(**response_data)
+        except requests.exceptions.HTTPError as error:
+            print(f"HTTP Error: {error}")
+        except requests.exceptions.RequestException as error:
+            print(f"Request Exception: {error}")
+    {{- end}}
+{{- end}}
+{{- end}}
+{{- end -}}
