@@ -18,6 +18,11 @@
 
     {{ .Type }}
 
+
+{{- else if isCoreType $type -}}
+
+    {{get $typeMap $type}}
+
 {{- else -}}
 
     {{ get $typeMap .Type }}

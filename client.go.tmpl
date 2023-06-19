@@ -13,7 +13,7 @@ import requests
 #
 
 {{- range .Services}}
-class {{.Name}}Client:
+class {{.Name}}:
     def __init__(self, hostname):
         self.hostname = hostname
         self.path = '/rpc/{{.Name}}/'
@@ -22,10 +22,10 @@ class {{.Name}}Client:
         return f"{self.hostname}{self.path}{name}"
 
     {{- range .Methods}}
-    def {{firstLetterToLower .Name}}(self, {{template "methodInputs" dict "Method" . "TypeMap" $typeMap}}):
+    def {{.Name}}(self, {{template "methodInputs" dict "Method" . "TypeMap" $typeMap}}):
         url = self.url('{{.Name}}')
         headers = {'Content-Type': 'application/json'}
-        body = json.dumps({{.Name}}Args({{template "methodInputs" dict "Method" . "TypeMap" $typeMap}}).__dict__)
+        body = json.dumps({{.Name}}Args({{template "methodInputs" dict "Method" . "TypeMap" $typeMap}}))
 
         try:
             response = requests.post(url, headers=headers, data=body)
