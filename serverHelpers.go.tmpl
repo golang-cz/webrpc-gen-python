@@ -4,6 +4,7 @@
 
 {{- range $messages }}
 def validate_{{ .Name }}(value):
+    {{- stderrPrintf "OPTS: %q" .Fields -}}
     {{- range .Fields }}
         {{- if .Optional }}
             if "{{ template "fieldName" dict "Field" . }}" in value and not validate_type(value["{{ template "fieldName" dict "Field" . }}"], "{{ template "pyType" dict "Type" .Type "TypeMap" $typeMap }}"):
