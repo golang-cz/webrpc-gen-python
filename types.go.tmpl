@@ -1,6 +1,7 @@
 {{define "types"}}
-{{- $messages := .Types -}}
 {{- $typeMap := .TypeMap -}}
+{{- $types := .Types -}}
+{{- $services := .Services -}}
 
 #
 # Imports
@@ -9,60 +10,76 @@ from enum import Enum
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import typing
+import json
 #
 # Types
 #
-{{- if .Types -}}
-{{range .Types -}}
+{{if $types -}}
+{{range $_i, $type := $types -}}
 
-{{if .Type | isEnumType -}}
-{{$enumName := .Name}}
-class {{$enumName}}(Enum):
-{{- range $i, $field := .Fields}}
-    {{$field.Name}} = '{{$field.Name}}'
+{{if isEnumType $type }}
+class {{$type.Name}}(Enum):
+{{- range $i, $field := $type.Fields}}
+  {{- if $i}},{{end}}
+  {{$field.Name}} = '{{$field.Name}}'
 {{- end}}
 {{end -}}
 
-{{- if .Type | isStructType  }}
-class {{.Name}}:
-    def __init__(self, {{- range .Fields}}
+{{- if isStructType $type }}
+class {{$type.Name}}:
+    def __init__(self, {{ range .Fields}}{{ end }}
+      {{- range $_, $field := $type.Fields}}
         {{- $isExportable := true -}}
-        {{- range $meta := .Meta -}} 
+        {{- range $meta := $field.Meta -}}
+          {{- if exists $meta "json" -}}
             {{- if eq (get $meta "json") "-" -}}
                 {{- $isExportable = false}}
             {{- end -}}
         {{- end }}
+        {{- end }}
         {{if $isExportable -}}{{.Name}}{{if .Optional}} = None{{end}},{{- end -}}
         {{- end}}
     ):
-        {{- range .Fields}}
+        {{- range $_, $field := $type.Fields}}
         self.{{.Name}} = {{.Name}}
         {{- end}}
-
+    def to_dict(self):
+        return {
+        {{- range $_, $field := $type.Fields}}
+        "{{.Name}}" : self.{{.Name}},
+        {{- end}}
+        }
+        
 
 {{end -}}
 {{end -}}
 {{end -}}
 
-{{- if .Services}}
-{{- range .Services}}
+{{if $services}}
+{{- range $_, $service := $services}}
 
 {{- range $_, $method := .Methods}}
-@dataclass
-class {{$method.Name}}Return(ABC):
-    pass
-
 @dataclass
 class {{$method.Name}}Args(ABC):
-    pass
+{{- range $_, $input := $method.Inputs}}
+    {{$input.Name}}{{if $input.Optional}}: Optional[{{$input.Type}}]{{else}}: {{$input.Type}}{{end}}
+{{- end}}
+    def to_dict(self):
+        return json.dumps(self, default=lambda o: o.__dict__)
+
+@dataclass
+class {{$method.Name}}Return(ABC):
+{{- range $_, $output := $method.Outputs}}
+    {{$output.Name}}{{if $output.Optional}}: Optional[{{$output.Type}}]{{else}}: {{$output.Type}}{{end}}
+{{- end}}
+    def to_dict(self):
+        return {
+        {{- range $_, $output := $method.Outputs}}
+        "{{$output.Name}}" : self.{{$output.Name}}.to_dict(),
+        {{- end}}
+        }
 {{- end}}
 
-class {{.Name}}(ABC):
-{{- range $_, $method := .Methods}}
-    @abstractmethod
-    def {{ $method.Name }}(self, {{template "methodInputs" dict "Method" $method "TypeMap" $typeMap}}) -> {{$method.Name}}Return:
-        pass
-{{- end}}
 {{end}}
 
 {{- range $_, $method := .Methods}}
@@ -82,4 +99,3 @@ class {{$method.Name}}Return:
 {{- end}}
 {{end}}
 {{- end}}
-

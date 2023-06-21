@@ -58,13 +58,14 @@ WebRPCSchemaVersion = "{{.SchemaVersion}}"
 # Schema hash generated from your RIDL schema
 WebRPCSchemaHash = "{{.SchemaHash}}"
 
-{{template "types" dict "Messages" .Types "Services" .Services "TypeMap" $typeMap}}
+{{template "types" dict "Types" .Types "Services" .Services "TypeMap" $typeMap}}
 
 
-{{- if $opts.client}}
-  {{template "client" dict "Services" .Services "TypeMap" $typeMap}}
-  {{template "client_helpers" .}}
-{{- end }}
+{{ if $opts.client}}
+{{template "client" dict "Services" .Services "TypeMap" $typeMap}}
+{{template "client_helpers" dict "WebrpcErrors" .WebrpcErrors "SchemaErrors" .Errors }}
+{{ end}}
+
 {{- if $opts.server}}
   {{- $serverOption := get .Opts "server" -}}
   {{- if or (eq $serverOption "flask")  (eq $serverOption "true") }}

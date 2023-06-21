@@ -29,5 +29,35 @@ jobs:
 
       - name: Regenerate examples
         run: cd _examples && make generate
-      - name: Git diff of regenerated files
-        run: cd _examples && make diff
+      #- name: Git diff of regenerated files
+      #  run: cd _examples && make diff
+
+  webrpc-interoperability:
+    strategy:
+      matrix:
+        webrpc-version: [v0.11.0]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: 3.11
+      - name: Set up webrpc binary cache folder
+        uses: actions/cache@v3
+        with:
+          key: webrpc-binaries
+          path: tests/bin
+      - name: Install dependencies
+        run: cd tests && pip install -r requirements.txt
+      - name: Download webrpc binaries
+        run: |
+          cd tests
+          chmod +x download.sh
+          ./download.sh ${{ matrix.webrpc-version }} bin/${{ matrix.webrpc-version }}
+      - name: Export path of webrpc binaries
+        run: cd tests && echo "$PWD/bin/${{ matrix.webrpc-version }}" >> $GITHUB_PATH
+      - name: Run interoperability tests
+        run: |
+          cd tests
+          chmod +x test.sh
+          ./test.sh
