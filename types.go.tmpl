@@ -10,6 +10,7 @@ from enum import Enum
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import typing
+import json
 #
 # Types
 #
@@ -42,7 +43,13 @@ class {{$type.Name}}:
         {{- range $_, $field := $type.Fields}}
         self.{{.Name}} = {{.Name}}
         {{- end}}
-
+    def to_dict(self):
+        return {
+        {{- range $_, $field := $type.Fields}}
+        "{{.Name}}" : self.{{.Name}},
+        {{- end}}
+        }
+        
 
 {{end -}}
 {{end -}}
@@ -53,20 +60,26 @@ class {{$type.Name}}:
 
 {{- range $_, $method := .Methods}}
 @dataclass
-class {{$method.Name}}Return(ABC):
-    pass
+class {{$method.Name}}Args(ABC):
+{{- range $_, $input := $method.Inputs}}
+    {{$input.Name}}{{if $input.Optional}}: Optional[{{$input.Type}}]{{else}}: {{$input.Type}}{{end}}
+{{- end}}
+    def to_dict(self):
+        return json.dumps(self, default=lambda o: o.__dict__)
 
 @dataclass
-class {{$method.Name}}Args(ABC):
-    pass
+class {{$method.Name}}Return(ABC):
+{{- range $_, $output := $method.Outputs}}
+    {{$output.Name}}{{if $output.Optional}}: Optional[{{$output.Type}}]{{else}}: {{$output.Type}}{{end}}
+{{- end}}
+    def to_dict(self):
+        return {
+        {{- range $_, $output := $method.Outputs}}
+        "{{$output.Name}}" : self.{{$output.Name}}.to_dict(),
+        {{- end}}
+        }
 {{- end}}
 
-class {{.Name}}(ABC):
-{{- range $_, $method := .Methods}}
-    @abstractmethod
-    def {{ $method.Name }}(self, {{template "methodInputs" dict "Method" $method "TypeMap" $typeMap}}) -> {{$method.Name}}Return:
-        pass
-{{- end}}
 {{end}}
 
 {{- range $_, $method := .Methods}}

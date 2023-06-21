@@ -11,5 +11,5 @@ This folder implements webrpc interoperability tests.
 ```bash
 ./download.sh v0.11.0 bin/v0.10.0
 export PATH="$PWD/bin/v0.10.0:$PATH"
-npm run test
+pytest
 ```
