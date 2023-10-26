@@ -19,7 +19,7 @@ def validate_{{ .Name }}(value):
 {{- end }}
 
 
-TYPE_VALIDATORS: typing.Dict[str, Callable[[any], bool]] = {}
+TYPE_VALIDATORS: Dict[str, Callable[[any], bool]] = {}
 
 TYPE_VALIDATORS = {
     {{ range $messages }}

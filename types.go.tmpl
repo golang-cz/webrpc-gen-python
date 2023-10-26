@@ -7,9 +7,10 @@
 # Imports
 #
 from enum import Enum
-from abc import ABC, asdict
+from abc import ABC
+import dataclasses
 from dataclasses import dataclass
-import typing
+from typing import List, Dict
 import json
 #
 # Types
@@ -18,7 +19,7 @@ import json
 @dataclass
 class BaseDataClass(ABC):
     def to_dict(self):
-        return asdict(self)
+        return dataclasses.asdict(self)
 
 {{if $types -}}
 {{range $_i, $type := $types -}}
@@ -27,7 +28,6 @@ class BaseDataClass(ABC):
 {{if isEnumType $type }}
 class {{$type.Name}}(Enum):
 {{- range $i, $field := $type.Fields}}
-  {{- if $i}},{{end}}
   {{$field.Name}} = '{{$field.Name}}'
 {{- end}}
 {{end -}}
@@ -43,8 +43,8 @@ class {{$type.Name}}(BaseDataClass):
                 {{- $isExportable = false}}
             {{- end -}}
         {{- end -}}
-        {{- end -}}
-        {{if and $isExportable (not $field.Optional) -}}{{.Name}} : PLACEHOLDER}}{{- end -}}
+        {{- end}}
+        {{if and $isExportable (not $field.Optional) -}}{{.Name}} : {{template "type" dict "Type" .Type "TypeMap" $typeMap}} {{- end -}}
         {{- end -}}
         {{- range $_, $field := $type.Fields}}
             {{- $isExportable := true -}}
@@ -53,14 +53,11 @@ class {{$type.Name}}(BaseDataClass):
                 {{- if eq (get $meta "json") "-" -}}
                     {{- $isExportable = false -}}
                 {{- end -}}
-            {{- end -}}
-            {{- end -}}
-        {{if and $isExportable $field.Optional -}}{{.Name}} : PLACEHOLDER = None,{{- end -}}
-            {{- end}} ):
-        {{- range $_, $field := $type.Fields}}
-        self.{{.Name}} = {{.Name}}
-        {{- end}}
-   
+            {{- end }}
+            {{- end }}
+        {{if and $isExportable $field.Optional -}}{{.Name}} : {{template "type" dict "Type" .Type "TypeMap" $typeMap}} = None{{- end -}}
+            {{- end}}
+
 
 {{end -}}
 {{end -}}
