@@ -7,6 +7,7 @@
 #
 import json
 import requests
+from typing import Optional, Dict
 
 #
 # Client
@@ -14,28 +15,31 @@ import requests
 
 {{- range .Services}}
 class {{.Name}}:
-    def __init__(self, hostname):
+    CONTENT_TYPE_JSON = {'Content-Type': 'application/json'}
+
+    def __init__(self, hostname: str):
         self.hostname = hostname
         self.path = '/rpc/{{.Name}}/'
 
-    def url(self, name):
+    def url(self, name: str) -> str:
         return f"{self.hostname}{self.path}{name}"
 
-    {{- range .Methods}}
-    def {{.Name}}(self, args : {{.Name}}Args, {{template "methodInputs" dict "Method" . "TypeMap" $typeMap}}):
-        url = self.url('{{.Name}}')
-        headers = {'Content-Type': 'application/json'} if not headers else headers
+    def _send_request(self, method_name: str, args, headers: Optional[Dict[str, str]] = None):
+        url = self.url(method_name)
+        headers = headers or self.CONTENT_TYPE_JSON
         body = json.dumps(args.to_dict())
-
         try:
             response = requests.post(url, headers=headers, data=body)
             response.raise_for_status()
-
-            response_data = response.json()
-            return {{.Name}}Return(**response_data)
-        except Exception as ex:
+            return response.json()
+        except requests.RequestException as ex:
             print(ex)
-            raise WebrpcRequestFailedError        
+            raise WebrpcRequestFailedError
+
+    {{- range .Methods}}
+    def {{.Name}}(self, args: {{.Name}}Args, headers: Optional[Dict[str, str]] = None):
+        response_data = self._send_request('{{.Name}}', args, headers)
+        return {{.Name}}Return(**response_data)
     {{- end}}
 {{- end}}
 {{- end}}

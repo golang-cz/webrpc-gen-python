@@ -7,15 +7,22 @@
 # Imports
 #
 from enum import Enum
-from abc import ABC, abstractmethod
+from abc import ABC, asdict
 from dataclasses import dataclass
 import typing
 import json
 #
 # Types
 #
+
+@dataclass
+class BaseDataClass(ABC):
+    def to_dict(self):
+        return asdict(self)
+
 {{if $types -}}
 {{range $_i, $type := $types -}}
+
 
 {{if isEnumType $type }}
 class {{$type.Name}}(Enum):
@@ -26,8 +33,8 @@ class {{$type.Name}}(Enum):
 {{end -}}
 
 {{- if isStructType $type }}
-class {{$type.Name}}:
-    def __init__(self, {{ range .Fields}}{{ end }}
+@dataclass
+class {{$type.Name}}(BaseDataClass):
       {{- range $_, $field := $type.Fields}}
         {{- $isExportable := true -}}
         {{- range $meta := $field.Meta -}}
@@ -35,49 +42,50 @@ class {{$type.Name}}:
             {{- if eq (get $meta "json") "-" -}}
                 {{- $isExportable = false}}
             {{- end -}}
-        {{- end }}
-        {{- end }}
-        {{if $isExportable -}}{{.Name}}{{if .Optional}} = None{{end}},{{- end -}}
-        {{- end}}
-    ):
+        {{- end -}}
+        {{- end -}}
+        {{if and $isExportable (not $field.Optional) -}}{{.Name}} : PLACEHOLDER}}{{- end -}}
+        {{- end -}}
+        {{- range $_, $field := $type.Fields}}
+            {{- $isExportable := true -}}
+            {{- range $meta := $field.Meta -}}
+            {{- if exists $meta "json" -}}
+                {{- if eq (get $meta "json") "-" -}}
+                    {{- $isExportable = false -}}
+                {{- end -}}
+            {{- end -}}
+            {{- end -}}
+        {{if and $isExportable $field.Optional -}}{{.Name}} : PLACEHOLDER = None,{{- end -}}
+            {{- end}} ):
         {{- range $_, $field := $type.Fields}}
         self.{{.Name}} = {{.Name}}
         {{- end}}
-    def to_dict(self):
-        return {
-        {{- range $_, $field := $type.Fields}}
-        "{{.Name}}" : self.{{.Name}},
-        {{- end}}
-        }
-        
+   
 
 {{end -}}
 {{end -}}
 {{end -}}
+
 
 {{if $services}}
 {{- range $_, $service := $services}}
-
 {{- range $_, $method := .Methods}}
 @dataclass
-class {{$method.Name}}Args(ABC):
+class {{$method.Name}}Args(BaseDataClass):
 {{- range $_, $input := $method.Inputs}}
-    {{$input.Name}}{{if $input.Optional}}: Optional[{{$input.Type}}]{{else}}: {{$input.Type}}{{end}}
+    {{$input.Name}}{{if $input.Optional}}: Optional[{{template "type" dict "Type" .Type "TypeMap" $typeMap}}]{{else}}:  {{template "type" dict "Type" .Type "TypeMap" $typeMap}}{{- end}}
 {{- end}}
-    def to_dict(self):
-        return json.dumps(self, default=lambda o: o.__dict__)
+
 
 @dataclass
-class {{$method.Name}}Return(ABC):
+class {{$method.Name}}Return(BaseDataClass):
+{{- if $method.Outputs}}
 {{- range $_, $output := $method.Outputs}}
-    {{$output.Name}}{{if $output.Optional}}: Optional[{{$output.Type}}]{{else}}: {{$output.Type}}{{end}}
+    {{$output.Name}}{{if $output.Optional}}: Optional[{{template "type" dict "Type" .Type "TypeMap" $typeMap}}]{{else}}: {{template "type" dict "Type" .Type "TypeMap" $typeMap}}{{end}}
 {{- end}}
-    def to_dict(self):
-        return {
-        {{- range $_, $output := $method.Outputs}}
-        "{{$output.Name}}" : self.{{$output.Name}}.to_dict(),
-        {{- end}}
-        }
+{{else}}
+    pass
+{{- end}}
 {{- end}}
 
 {{end}}
