@@ -35,6 +35,7 @@ class {{$type.Name}}(Enum):
 {{- if isStructType $type }}
 @dataclass
 class {{$type.Name}}(BaseDataClass):
+    {{if $type.Fields -}}
       {{- range $_, $field := $type.Fields}}
         {{- $isExportable := true -}}
         {{- range $meta := $field.Meta -}}
@@ -44,7 +45,7 @@ class {{$type.Name}}(BaseDataClass):
             {{- end -}}
         {{- end -}}
         {{- end}}
-        {{if and $isExportable (not $field.Optional) -}}{{.Name}} : {{template "type" dict "Type" .Type "TypeMap" $typeMap}} {{- end -}}
+    {{if and $isExportable (not $field.Optional) -}}{{.Name}} : {{template "type" dict "Type" .Type "TypeMap" $typeMap}} {{- end -}}
         {{- end -}}
         {{- range $_, $field := $type.Fields}}
             {{- $isExportable := true -}}
@@ -55,8 +56,11 @@ class {{$type.Name}}(BaseDataClass):
                 {{- end -}}
             {{- end }}
             {{- end }}
-        {{if and $isExportable $field.Optional -}}{{.Name}} : {{template "type" dict "Type" .Type "TypeMap" $typeMap}} = None{{- end -}}
+    {{if and $isExportable $field.Optional -}}{{.Name}} : {{template "type" dict "Type" .Type "TypeMap" $typeMap}} = None{{- end -}}
             {{- end}}
+    {{else}}
+    pass
+    {{end}}
 
 
 {{end -}}
@@ -69,8 +73,12 @@ class {{$type.Name}}(BaseDataClass):
 {{- range $_, $method := .Methods}}
 @dataclass
 class {{$method.Name}}Args(BaseDataClass):
+{{if $method.Inputs}}
 {{- range $_, $input := $method.Inputs}}
     {{$input.Name}}{{if $input.Optional}}: Optional[{{template "type" dict "Type" .Type "TypeMap" $typeMap}}]{{else}}:  {{template "type" dict "Type" .Type "TypeMap" $typeMap}}{{- end}}
+{{- end}}
+{{else}}
+    pass
 {{- end}}
 
 
@@ -90,16 +98,24 @@ class {{$method.Name}}Return(BaseDataClass):
 {{- range $_, $method := .Methods}}
 @dataclass
 class {{$method.Name}}Args:
+{{if .Inputs}}
 {{- range .Inputs}}
     {{.Name}}{{if .Optional}} = None{{end}}: {{template "type" dict "Type" .Type "TypeMap" $typeMap}}
+{{- end}}
+{{else}}
+    pass
 {{- end}}
 {{- end}}
 
 {{- range $_, $method := .Methods}}
 @dataclass
 class {{$method.Name}}Return:
+{{- if .Outputs}}
 {{- range .Outputs}}
     {{.Name}}{{if .Optional}} = None{{end}}: {{template "type" dict "Type" .Type "TypeMap" $typeMap}}
+{{- end}}
+{{else}}
+    pass
 {{- end}}
 {{- end}}
 {{end}}
