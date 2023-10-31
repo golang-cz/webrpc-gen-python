@@ -14,9 +14,6 @@
 
     List[{{ template "type" dict "Type" (listElemType .Type) "TypeMap" $typeMap }}]
 
-{{- else if isStructType .Type -}}
-
-    {{ .Type }}
 
 
 {{- else if isCoreType $type -}}
@@ -25,7 +22,7 @@
 
 {{- else -}}
 
-    {{ get $typeMap .Type }}
+    {{ .Type }}
 
 {{- end -}}
 {{- end -}}

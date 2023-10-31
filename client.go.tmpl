@@ -6,7 +6,9 @@
 # Imports
 #
 import json
-import requests
+import urllib.request
+from urllib.error import HTTPError
+from typing import Optional, Dict
 
 #
 # Client
@@ -14,28 +16,45 @@ import requests
 
 {{- range .Services}}
 class {{.Name}}:
-    def __init__(self, hostname):
+    CONTENT_TYPE_JSON = {'Content-Type': 'application/json'}
+
+    def __init__(self, hostname: str):
         self.hostname = hostname
         self.path = '/rpc/{{.Name}}/'
 
-    def url(self, name):
+    def url(self, name: str) -> str:
         return f"{self.hostname}{self.path}{name}"
 
-    {{- range .Methods}}
-    def {{.Name}}(self, args : {{.Name}}Args, {{template "methodInputs" dict "Method" . "TypeMap" $typeMap}}):
-        url = self.url('{{.Name}}')
-        headers = {'Content-Type': 'application/json'} if not headers else headers
-        body = json.dumps(args.to_dict())
+    def _send_request(self, method_name: str, args, headers: Optional[Dict[str, str]] = None):
+        url = self.url(method_name)
+        headers = headers or self.CONTENT_TYPE_JSON
+        body = json.dumps(args.to_dict()).encode('utf-8')  # Encode to bytes
+        req = urllib.request.Request(url, data=body, headers=headers)
 
         try:
-            response = requests.post(url, headers=headers, data=body)
-            response.raise_for_status()
+            with urllib.request.urlopen(req) as response:
+                response_data = json.loads(response.read().decode('utf-8'))
+            return response_data
+        except HTTPError as ex:  # Catch only HTTPError
+            error_body = ex.read().decode('utf-8')  # Read the response body
+            try:
+                error_data = json.loads(error_body)  # Attempt to parse it as JSON
+            except json.JSONDecodeError:
+                error_data = {"error": "Unknown", "message": error_body}
+            
+            # Directly raise your custom exception
+            raise WebrpcRequestFailedError(
+                message=error_data.get('msg', 'Unknown error'),
+                code=error_data.get('code', -1),
+                cause=error_data.get('cause'),
+                status=error_data.get('status')
+            )
 
-            response_data = response.json()
-            return {{.Name}}Return(**response_data)
-        except Exception as ex:
-            print(ex)
-            raise WebrpcRequestFailedError        
+
+    {{- range .Methods}}
+    def {{.Name}}(self, args: {{.Name}}Args, headers: Optional[Dict[str, str]] = None):
+        response_data = self._send_request('{{.Name}}', args, headers)
+        return {{.Name}}Return(**response_data)
     {{- end}}
 {{- end}}
 {{- end}}

@@ -2,38 +2,6 @@
 {{- $webrpcErrors := .WebrpcErrors -}}
 {{- $schemaErrors := .SchemaErrors -}}
 
-
-
-
-
-
-def create_http_request(body=None, headers=None):
-    if body is None:
-        body = {}
-    if headers is None:
-        headers = {}
-    headers["Content-Type"] = "application/json"
-    return {
-        "method": "POST",
-        "headers": headers,
-        "body": json.dumps(body),
-    }
-
-async def build_response(response):
-    text = await response.text()
-    try:
-        data = json.loads(text)
-    except Exception as error:
-        raise WebrpcBadResponseError(
-            status=response.status,
-            cause=f"JSON.parse(): {str(error)}: response text: {text}"
-        )
-    if not response.ok:
-        code = data.get("code", 0) if isinstance(data, dict) else 0
-        raise (webrpc_error_by_code.get(code) or WebrpcError)(data)
-    return data
-
-
 class WebrpcError(Exception):
     def __init__(self, name=None, code=0, message=None, status=0, cause=None):
         super().__init__(message)
@@ -85,8 +53,4 @@ webrpc_error_by_code = {
     {{ $error.Code }}: {{ $error.Name }}Error,
 {{- end}}
 }
-
-async def fetch(input, init=None):
-    response = await aiohttp.request("POST", input, headers=init.get("headers"), json=init.get("body"))
-    return response
 {{end}}
